@@ -1,0 +1,72 @@
+;  Function Name:        Calendar Date
+;  File Name:            calendar_date.pro
+;  Functions Required:   None
+;---------------------------------------------------------------------------------------------------
+;  Function Description:
+;    This function computes the calendar parameters of year, month, day, and decimal part
+;    of a day given the number of Julian days from 4713 BC (astronomically, -4712) Jan 1
+;    1200.
+
+;    The function range is 4713 BC (astronomically, -4712) Jan 1 1200 to the end of time.
+;    The function is based on "Astronomical Algorithms", by Jean Meeus, pp. 63 - 64.
+
+;    year < 0 must be interpreted on output as a calendar year in the era BC. 1 is
+;    subtracted from the astronomical year to give the calendar year (see table below).
+
+;    Because there is no calendar year 0 but there is an astronomical year 0 -
+;    Calendar:      6 BC  5 BC  4 BC  3 BC  2 BC  1 BC  1 AD  2 AD  3 AD  4 AD
+;    Astronomical: -5    -4    -3    -2    -1     0    +1    +2    +3    +4
+;                         leap                    leap                    leap
+;    Leap years in the era BC occur in years when (calendar year+1) modulo 4 = 0
+;---------------------------------------------------------------------------------------------------
+;  1992          Began initial development in PASCAL
+;  1999 Oct 24   Began conversion to C
+;  2004 Apr 18   Began conversion to MATLAB;  
+;  2005 Mar 16   Converted to IDL
+;                Last Modified
+;---------------------------------------------------------------------------------------------------
+
+PRO Calendar_Date, julian_day, year, month_num, day, decimal_day
+
+   julian_day_longint = Long64 (julian_day + 0.5)
+   julian_day_fract = (julian_day + 0.5) - Long64 (julian_day + 0.5)
+
+   IF (julian_day_fract EQ 1.0) THEN BEGIN
+      julian_day_longint = julian_day_longint + 1
+      julian_day_fract = 0.0
+   ENDIF
+
+   IF (julian_day_longint GT 2299160) THEN BEGIN
+         ; Gregorian era
+      A = Long64 ((julian_day_longint - 1867216.25) / 36524.25)
+      B = julian_day_longint + 1 + A - FIX (A / 4.0)
+   ENDIF ELSE BEGIN
+         ; Julian era
+      B = julian_day_longint
+   ENDELSE
+
+   C = B + 1524
+   D = Long64 ((Double(C) - 122.1) / 365.25)
+   E = Long64 (365.25 * D)
+   G = Long64 ((C - E) / 30.6001)
+   temp_day = Double (C - E + julian_day_fract - FIX (30.6001 * G))
+   day = FIX (temp_day)
+   decimal_day = temp_day - day
+
+   IF (G GT 13.5) THEN BEGIN
+      month_num = G - 13
+   ENDIF ELSE BEGIN
+      month_num = G - 1
+   ENDELSE
+
+   IF (month_num GT 2) THEN BEGIN
+      year = D - 4716
+   ENDIF ELSE BEGIN
+      year = D - 4715
+   ENDELSE
+
+   IF (year LT 1) THEN BEGIN
+      year = year - 1
+   ENDIF
+
+END
